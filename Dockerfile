@@ -11,6 +11,16 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y sqlite3
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y supervisor
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common
 
+# setup ssh service
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y openssh-server
+RUN mkdir /var/run/sshd
+RUN echo 'root:docker' | chpasswd
+RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
+RUN sed -ri 's/#UsePAM no/UsePAM no/g' /etc/ssh/sshd_config
+
+ENV NOTVISIBLE "in users profile"
+RUN echo "export VISIBLE=now" >> /etc/profile
+
 # add nginx stable ppa
 RUN DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:nginx/stable
 # update packages after adding nginx repository
@@ -42,5 +52,6 @@ RUN django-admin.py startproject website /home/docker/code/app/
 RUN cd /home/docker/code/app && ./manage.py syncdb --noinput
 
 EXPOSE 80
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
 CMD ["supervisord", "-n"]
-CMD /bin/bash
